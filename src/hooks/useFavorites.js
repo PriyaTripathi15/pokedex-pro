@@ -1,28 +1,26 @@
 import { useState, useEffect } from 'react';
 
 export default function useFavorites() {
-  const [favorites, setFavorites] = useState([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [favorites, setFavorites] = useState(() => {
+    if (typeof window === 'undefined') return [];
 
-  // Load favorites from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('pokemonFavorites');
-    if (saved) {
-      try {
-        setFavorites(JSON.parse(saved));
-      } catch (error) {
-        console.error('Error loading favorites:', error);
-      }
+    try {
+      const saved = window.localStorage.getItem('pokemonFavorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+      return [];
     }
-    setIsLoaded(true);
-  }, []);
+  });
 
   // Save favorites to localStorage whenever they change
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('pokemonFavorites', JSON.stringify(favorites));
+    try {
+      window.localStorage.setItem('pokemonFavorites', JSON.stringify(favorites));
+    } catch (error) {
+      console.error('Error saving favorites:', error);
     }
-  }, [favorites, isLoaded]);
+  }, [favorites]);
 
   const addFavorite = (pokemon) => {
     setFavorites(prev => {

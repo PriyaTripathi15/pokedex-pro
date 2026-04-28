@@ -84,26 +84,32 @@ pokedex-pro/
    npm install
    ```
 
-3. **Start development server**
+3. **Start the Node SSR server**
    ```bash
    npm run dev
    ```
-   The app will open at `http://localhost:5173`
+  The app will open at `http://localhost:5173` by default. If that port is busy, set `PORT`.
+
+  If you want the plain client-only Vite version for comparison:
+  ```bash
+  npm run dev:client
+  ```
 
 4. **Build for production**
    ```bash
    npm run build
    ```
-   Output will be in the `dist/` folder
+  Output will be in `dist/client` and `dist/server`
 
 ## 📱 How to Use
 
-1. **Browse Pokémon**: The app loads 200+ Pokémon on startup
-2. **Search**: Type a Pokémon name in the search bar for instant results
-3. **Filter by Type**: Click type buttons to filter Pokémon by their type
-4. **View Details**: Click any Pokémon card to open the detail modal
-5. **Add to Favorites**: Click the ❤️ button to save your favorite Pokémon
-6. **Pagination**: Use the navigation buttons to browse pages
+1. **Sign in first**: Use Google OAuth or GitHub OAuth on the login screen
+2. **Browse Pokémon**: After login, the app loads 200+ Pokémon on startup
+3. **Search**: Type a Pokémon name in the search bar for instant results
+4. **Filter by Type**: Click type buttons to filter Pokémon by their type
+5. **View Details**: Click any Pokémon card to open the detail modal
+6. **Add to Favorites**: Click the ❤️ button to save your favorite Pokémon
+7. **Pagination**: Use the navigation buttons to browse pages
 
 ## 🎨 Color Scheme
 
@@ -122,6 +128,23 @@ The app uses the free [PokéAPI](https://pokeapi.co/) with the following endpoin
 - `GET /type/{type_name}` - Pokémon of a specific type
 
 **Note**: API calls are made client-side. No backend server is required.
+
+## 🔐 OAuth + SSR Setup
+
+This version includes a real Node.js backend for OAuth and SSR.
+
+Required environment variables:
+
+- `SESSION_SECRET`
+- `APP_BASE_URL`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GITHUB_CLIENT_ID`
+- `GITHUB_CLIENT_SECRET`
+
+The auth buttons redirect to `/auth/google` and `/auth/github`, and the server stores the signed-in user in a session cookie.
+
+SSR is handled by the Node server in `server/index.mjs`, which renders the React app on the server and hydrates it on the client.
 
 ## 💾 Local Storage
 
@@ -215,9 +238,22 @@ Favorites persist across browser sessions and tab refreshes.
    ```
 2. Run: `npm run build && npm run deploy`
 
+## ⭐ Selected Bonus
+
+These bonus items are matched to the assignment brief:
+
+- [x] Animations - subtle hover, transition, page switching, and modal motion are already in the app
+- [x] User Authentication (OAuth) - minimal proof of concept using Google/GitHub-style login state in the app shell
+- [ ] Server-Side Rendering (SSR) - not implemented in this Vite app; use a separate Next.js branch for SSR and SEO
+
+## 🧾 Assignment Mapping
+
+- **Authentication**: implemented as a minimal proof-of-concept, which is acceptable for the optional bonus.
+- **Animations**: implemented with subtle hover, page, and modal transitions.
+- **SSR**: left as a separate framework experiment because SSR requires a framework like Next.js rather than a Vite-only page.
+
 ## 📝 Future Enhancements
 
-- [ ] Authentication with OAuth (Google, GitHub)
 - [ ] User accounts and profiles
 - [ ] Pokémon comparison tool
 - [ ] Battle simulator

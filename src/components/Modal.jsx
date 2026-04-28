@@ -6,8 +6,8 @@ export default function Modal({ pokemon, onClose, loading, isFavorite, onFavorit
   const imageUrl = pokemon.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-yellow-400/20 bg-[#0f0f15] shadow-[0_24px_80px_rgba(0,0,0,0.7)]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-fadeIn" onClick={onClose}>
+      <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-yellow-400/20 bg-[#0f0f15] shadow-[0_24px_80px_rgba(0,0,0,0.7)] animate-slideIn" onClick={e => e.stopPropagation()}>
         {loading ? (
           <Loader />
         ) : (
@@ -17,7 +17,7 @@ export default function Modal({ pokemon, onClose, loading, isFavorite, onFavorit
               <h2 className="text-2xl font-bold capitalize text-yellow-100">{pokemon.name}</h2>
               <button
                 onClick={onClose}
-                className="text-2xl font-bold text-yellow-100/80 hover:text-yellow-300"
+                className="text-2xl font-bold text-yellow-100/80 transition-colors hover:text-yellow-300"
               >
                 ✕
               </button>
@@ -30,7 +30,7 @@ export default function Modal({ pokemon, onClose, loading, isFavorite, onFavorit
                 <img
                   src={imageUrl}
                   alt={pokemon.name}
-                  className="mx-auto h-40 w-40 object-contain drop-shadow-[0_16px_30px_rgba(0,0,0,0.45)]"
+                  className="mx-auto h-40 w-40 object-contain drop-shadow-[0_16px_30px_rgba(0,0,0,0.45)] transition-transform duration-300 hover:scale-105"
                   onError={(e) => {
                     e.target.src = 'https://via.placeholder.com/160?text=Pokemon';
                   }}

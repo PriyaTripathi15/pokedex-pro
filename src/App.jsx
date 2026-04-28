@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { fetchPokemonList, fetchPokemonDetails } from './utils/api';
 import useFavorites from './hooks/useFavorites';
+import useAuth from './hooks/useAuth';
 import Navbar from './components/Navbar';
+import LoginScreen from './components/LoginScreen';
 import SearchBar from './components/SearchBar';
 import TypeFilter from './components/TypeFilter';
 import PokemonGrid from './components/PokemonGrid';
@@ -9,10 +11,10 @@ import Pagination from './components/Pagination';
 import Modal from './components/Modal';
 import Error from './components/Error';
 
-export default function App() {
+export default function App({ initialAuthUser = null, isSSRMode = false } = {}) {
   const [pokemon, setPokemon] = useState([]);
   const [filteredPokemon, setFilteredPokemon] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTypes, setSelectedTypes] = useState([]);
@@ -21,6 +23,9 @@ export default function App() {
   const [pokemonDetails, setPokemonDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const { favorites, addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const { user, configured, signIn, signOut } = useAuth(initialAuthUser, {
+    enableServerAuth: isSSRMode,
+  });
 
   const itemsPerPage = 20;
   const totalPages = Math.ceil(filteredPokemon.length / itemsPerPage);
@@ -257,9 +262,19 @@ export default function App() {
   const endIndex = startIndex + itemsPerPage;
   const currentPokemon = filteredPokemon.slice(startIndex, endIndex);
 
+  if (!user) {
+    return (
+      <LoginScreen
+        onGoogleLogin={() => signIn('google')}
+        onGithubLogin={() => signIn('github')}
+        configured={configured}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(220,20,60,0.18),_transparent_36%),linear-gradient(180deg,_#09090e_0%,_#101016_45%,_#18111a_100%)] text-yellow-50">
-      <Navbar favoriteCount={favorites.length} />
+      <Navbar favoriteCount={favorites.length} user={user} onSignOut={signOut} />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Header Section */}
@@ -311,13 +326,15 @@ export default function App() {
         {error && <Error message={error} onRetry={loadInitialPokemon} />}
 
         {/* Pokemon Grid */}
-        <PokemonGrid
-          pokemon={currentPokemon}
-          loading={loading}
-          onSelect={loadPokemonDetails}
-          favorites={favorites}
-          onFavoriteClick={handleFavorite}
-        />
+        <div key={`${currentPage}-${filteredPokemon.length}-${searchQuery}-${selectedTypes.join(',')}`} className="animate-fadeIn">
+          <PokemonGrid
+            pokemon={currentPokemon}
+            loading={loading}
+            onSelect={loadPokemonDetails}
+            favorites={favorites}
+            onFavoriteClick={handleFavorite}
+          />
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && !loading && (
