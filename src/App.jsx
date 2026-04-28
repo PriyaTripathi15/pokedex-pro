@@ -25,6 +25,82 @@ export default function App() {
   const itemsPerPage = 20;
   const totalPages = Math.ceil(filteredPokemon.length / itemsPerPage);
 
+  const normalizeSearchText = (value) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+  const getEditDistance = (left, right) => {
+    if (left === right) return 0;
+    if (!left) return right.length;
+    if (!right) return left.length;
+
+    const rows = Array.from({ length: right.length + 1 }, (_, index) => [index]);
+    for (let row = 1; row <= right.length; row += 1) {
+      rows[row][0] = row;
+      for (let column = 1; column <= left.length; column += 1) {
+        const substitutionCost = left[column - 1] === right[row - 1] ? 0 : 1;
+        rows[row][column] = Math.min(
+          rows[row - 1][column] + 1,
+          rows[row][column - 1] + 1,
+          rows[row - 1][column - 1] + substitutionCost
+        );
+      }
+    }
+
+    return rows[right.length][left.length];
+  };
+
+  const isSubsequenceMatch = (query, target) => {
+    if (!query) return false;
+
+    let queryIndex = 0;
+
+    for (let targetIndex = 0; targetIndex < target.length && queryIndex < query.length; targetIndex += 1) {
+      if (query[queryIndex] === target[targetIndex]) {
+        queryIndex += 1;
+      }
+    }
+
+    return queryIndex === query.length;
+  };
+
+  const getPokemonSearchScore = (pokemonName, query) => {
+    const normalizedName = normalizeSearchText(pokemonName);
+    const normalizedQuery = normalizeSearchText(query);
+
+    if (!normalizedQuery) return 0;
+    if (normalizedName === normalizedQuery) return 100;
+    if (normalizedName.startsWith(normalizedQuery)) return 90;
+    if (normalizedName.includes(normalizedQuery)) return 80;
+    if (isSubsequenceMatch(normalizedQuery, normalizedName)) return 70;
+
+    const distance = getEditDistance(normalizedName, normalizedQuery);
+    const tolerance = normalizedQuery.length <= 4 ? 1 : normalizedQuery.length <= 7 ? 3 : 4;
+
+    return distance <= tolerance ? 70 - distance : 0;
+  };
+
+  const matchesPokemonQuery = (pokemonEntry, query) => {
+    const normalizedQuery = normalizeSearchText(query);
+    const searchFields = [
+      pokemonEntry.name,
+      ...(pokemonEntry.types || []),
+      ...(pokemonEntry.abilities || []),
+    ].map(normalizeSearchText);
+
+    return searchFields.some(field => {
+      if (!field || !normalizedQuery) return false;
+
+      if (field === normalizedQuery) return true;
+      if (field.startsWith(normalizedQuery)) return true;
+      if (field.includes(normalizedQuery)) return true;
+      return isSubsequenceMatch(normalizedQuery, field);
+    });
+  };
+
   // Initial load
   useEffect(() => {
     loadInitialPokemon();
@@ -40,8 +116,21 @@ export default function App() {
     }
 
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      result = result.filter(p => p.name.toLowerCase().includes(query));
+      const rankedResults = result
+        .map(p => ({
+          pokemon: p,
+          score: matchesPokemonQuery(p, searchQuery)
+            ? Math.max(
+                getPokemonSearchScore(p.name, searchQuery),
+                getPokemonSearchScore(p.types?.join(' ') || '', searchQuery) - 10,
+                getPokemonSearchScore(p.abilities?.join(' ') || '', searchQuery) - 20
+              )
+            : 0,
+        }))
+        .filter(entry => entry.score > 0)
+        .sort((left, right) => right.score - left.score || left.pokemon.id - right.pokemon.id);
+
+      result = rankedResults.map(entry => entry.pokemon);
     }
 
     setFilteredPokemon(result);
