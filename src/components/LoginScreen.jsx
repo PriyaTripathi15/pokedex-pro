@@ -4,7 +4,7 @@ export default function LoginScreen({
   configured = { google: false, github: false }
 }) {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#0a0a0f] text-yellow-50 px-4">
+    <main className="min-h-screen flex items-center justify-center bg-[#0a0a0f] text-yellow-50 px-4 ">
 
       {/* 🔥 ONE COMBINED CARD */}
       <div className="flex w-full max-w-5xl rounded-3xl overflow-hidden border border-yellow-400/20 bg-[#111118]/90 backdrop-blur-xl shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
@@ -27,7 +27,7 @@ export default function LoginScreen({
   {/* Logo */}
   <div className="mb-6 flex items-center gap-3 justify-center md:justify-start">
     <span className="h-3 w-3 rounded-full bg-red-400 shadow-[0_0_16px_rgba(248,113,113,0.75)]" />
-    <h1 className="text-3xl font-bold text-yellow-200">
+    <h1 className="text-3xl font-bold text-yellow-200 font-mono">
       Pokédex Pro
     </h1>
   </div>
@@ -40,7 +40,7 @@ export default function LoginScreen({
     Explore the Pokémon World
   </h2>
 
-  <p className="mt-2 text-sm text-yellow-100/70 text-center md:text-left">
+  <p className="mt-2 text-sm text-yellow-100/70 text-center md:text-left font-sans">
     Search, filter, and discover Pokémon with a fast and responsive interface.
   </p>
 
