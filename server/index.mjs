@@ -190,7 +190,7 @@ app.use('*', async (req, res, next) => {
       render = (await vite.ssrLoadModule('/src/entry-server.jsx')).render;
     } else {
       template = fs.readFileSync(path.resolve(root, 'dist/client/index.html'), 'utf-8');
-      render = (await import(path.resolve(root, 'dist/server/entry-server.mjs'))).render;
+      render = (await import(path.resolve(root, 'dist/server/entry-server.js'))).render;
     }
 
     const initialState = {
