@@ -6,8 +6,6 @@ export default function useAuth(initialUser = null, options = {}) {
   const [configured, setConfigured] = useState({ google: false, github: false });
 
   useEffect(() => {
-    if (!enableServerAuth) return undefined;
-
     let isCancelled = false;
 
     const loadCurrentUser = async () => {
@@ -51,7 +49,7 @@ export default function useAuth(initialUser = null, options = {}) {
     return () => {
       isCancelled = true;
     };
-  }, [enableServerAuth]);
+  }, []);
 
   const signIn = (provider) => {
     if (typeof window === 'undefined') return;
