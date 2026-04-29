@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import express from 'express';
 import session from 'express-session';
-import RedisStore from 'connect-redis';
 import { createClient } from 'redis';
+import { RedisStore } from 'connect-redis';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GitHubStrategy } from 'passport-github2';
@@ -35,20 +35,26 @@ const githubConfigured = Boolean(process.env.GITHUB_CLIENT_ID && process.env.GIT
 app.use(express.json());
 
 // ✅ REDIS SESSION STORE FOR PRODUCTION
-let redisClient;
 let store;
 
-if (isProduction) {
-  redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
-  });
-  
-  redisClient.connect().catch(err => {
-    console.warn('Redis connection failed:', err.message);
+if (isProduction && process.env.REDIS_URL) {
+  try {
+    const redisClient = createClient({
+      url: process.env.REDIS_URL,
+      socket: { reconnectStrategy: (retries) => Math.min(retries * 50, 500) }
+    });
+    
+    redisClient.on('error', err => {
+      console.warn('Redis error:', err.message);
+    });
+    
+    redisClient.connect();
+    console.log('✓ Redis client created (connecting...)');
+    store = new RedisStore({ client: redisClient, prefix: 'pokedex:' });
+  } catch (err) {
+    console.warn('⚠ Failed to setup Redis:', err.message);
     console.warn('Sessions will use memory store as fallback');
-  });
-
-  store = new RedisStore({ client: redisClient, prefix: 'pokedex:' });
+  }
 }
 
 app.use(
