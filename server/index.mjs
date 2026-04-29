@@ -5,8 +5,6 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import express from 'express';
 import session from 'express-session';
-import { createClient } from 'redis';
-import { RedisStore } from 'connect-redis';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GitHubStrategy } from 'passport-github2';
@@ -19,6 +17,7 @@ const root = path.resolve(__dirname, '..');
 const isProduction = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT || 3000);
 
+// ✅ FIXED: No localhost fallback issue
 const appBaseUrl =
   process.env.APP_BASE_URL ||
   (isProduction
@@ -27,45 +26,19 @@ const appBaseUrl =
 
 const app = express();
 
-app.set('trust proxy', 1); // ✅ IMPORTANT (for Render cookies)
-
 const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 const githubConfigured = Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
 
 app.use(express.json());
 
-// ✅ REDIS SESSION STORE FOR PRODUCTION
-let store;
-
-if (isProduction && process.env.REDIS_URL) {
-  try {
-    const redisClient = createClient({
-      url: process.env.REDIS_URL,
-      socket: { reconnectStrategy: (retries) => Math.min(retries * 50, 500) }
-    });
-    
-    redisClient.on('error', err => {
-      console.warn('Redis error:', err.message);
-    });
-    
-    redisClient.connect();
-    console.log('✓ Redis client created (connecting...)');
-    store = new RedisStore({ client: redisClient, prefix: 'pokedex:' });
-  } catch (err) {
-    console.warn('⚠ Failed to setup Redis:', err.message);
-    console.warn('Sessions will use memory store as fallback');
-  }
-}
-
 app.use(
   session({
-    store,
     secret: process.env.SESSION_SECRET || 'pokedex-pro-dev-session-secret',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      sameSite: isProduction ? 'none' : 'lax',
+      sameSite: 'lax',
       secure: isProduction,
     },
   })
@@ -86,6 +59,7 @@ const normalizeProfile = (provider, profile) => ({
   accent: provider === 'google' ? 'from-red-500 to-yellow-300' : 'from-yellow-300 to-red-500',
 });
 
+
 // ================= GOOGLE =================
 if (googleConfigured) {
   passport.use(
@@ -93,6 +67,8 @@ if (googleConfigured) {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+
+        // ✅ FIXED: production-safe callback
         callbackURL:
           process.env.GOOGLE_CALLBACK_URL ||
           `${appBaseUrl}/auth/google/callback`,
@@ -110,9 +86,12 @@ if (githubConfigured) {
       {
         clientID: process.env.GITHUB_CLIENT_ID,
         clientSecret: process.env.GITHUB_CLIENT_SECRET,
+
+        // ✅ FIXED
         callbackURL:
           process.env.GITHUB_CALLBACK_URL ||
           `${appBaseUrl}/auth/github/callback`,
+
         scope: ['user:email'],
       },
       (_accessToken, _refreshToken, profile, done) =>
@@ -133,40 +112,48 @@ app.get('/api/auth/me', (req, res) => {
 });
 
 // GOOGLE LOGIN
-app.get('/auth/google', (req, res, next) => {
-  if (!googleConfigured) return res.status(501).send('Google OAuth not configured');
-  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
-});
+app.get(
+  '/auth/google',
+  (req, res, next) => {
+    if (!googleConfigured) return res.status(501).send('Google OAuth not configured');
+    next();
+  },
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
 
-app.get('/auth/google/callback', (req, res, next) => {
-  if (!googleConfigured) return res.status(501).send('Google OAuth not configured');
-
-  passport.authenticate('google', { failureRedirect: '/' })(
-    req,
-    res,
-    () => {
-      res.redirect(process.env.CLIENT_URL || '/');
-    }
-  );
-});
+app.get(
+  '/auth/google/callback',
+  (req, res, next) => {
+    if (!googleConfigured) return res.status(501).send('Google OAuth not configured');
+    next();
+  },
+  passport.authenticate('google', { failureRedirect: '/' }),
+  (req, res) => {
+    res.redirect(process.env.CLIENT_URL || '/');
+  }
+);
 
 // GITHUB LOGIN
-app.get('/auth/github', (req, res, next) => {
-  if (!githubConfigured) return res.status(501).send('GitHub OAuth not configured');
-  passport.authenticate('github')(req, res, next);
-});
+app.get(
+  '/auth/github',
+  (req, res, next) => {
+    if (!githubConfigured) return res.status(501).send('GitHub OAuth not configured');
+    next();
+  },
+  passport.authenticate('github')
+);
 
-app.get('/auth/github/callback', (req, res, next) => {
-  if (!githubConfigured) return res.status(501).send('GitHub OAuth not configured');
-
-  passport.authenticate('github', { failureRedirect: '/' })(
-    req,
-    res,
-    () => {
-      res.redirect(process.env.CLIENT_URL || '/');
-    }
-  );
-});
+app.get(
+  '/auth/github/callback',
+  (req, res, next) => {
+    if (!githubConfigured) return res.status(501).send('GitHub OAuth not configured');
+    next();
+  },
+  passport.authenticate('github', { failureRedirect: '/' }),
+  (req, res) => {
+    res.redirect(process.env.CLIENT_URL || '/');
+  }
+);
 
 app.get('/auth/logout', (req, res) => {
   req.logout(() => {
@@ -174,4 +161,60 @@ app.get('/auth/logout', (req, res) => {
       res.redirect(process.env.CLIENT_URL || '/');
     });
   });
+});
+
+// ================= VITE / SSR =================
+let vite;
+
+if (!isProduction) {
+  vite = await createViteServer({
+    server: { middlewareMode: true },
+    appType: 'custom',
+  });
+
+  app.use(vite.middlewares);
+} else {
+  app.use('/assets', express.static(path.resolve(root, 'dist/client/assets')));
+}
+
+// ================= SSR ROUTE =================
+app.use('*', async (req, res, next) => {
+  try {
+    const url = req.originalUrl;
+    let template;
+    let render;
+
+    if (!isProduction) {
+      template = fs.readFileSync(path.resolve(root, 'index.html'), 'utf-8');
+      template = await vite.transformIndexHtml(url, template);
+      render = (await vite.ssrLoadModule('/src/entry-server.jsx')).render;
+    } else {
+      template = fs.readFileSync(path.resolve(root, 'dist/client/index.html'), 'utf-8');
+      render = (await import(path.resolve(root, 'dist/server/entry-server.mjs'))).render;
+    }
+
+    const initialState = {
+      ssr: true,
+      user: req.user || null,
+    };
+
+    const appHtml = await render(url, initialState);
+
+    const html = template
+      .replace('<!--app-html-->', appHtml)
+      .replace(
+        'window.__INITIAL_STATE__ = { ssr: false }',
+        `window.__INITIAL_STATE__ = ${JSON.stringify(initialState).replace(/</g, '\\u003c')}`
+      );
+
+    res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+  } catch (error) {
+    if (vite) vite.ssrFixStacktrace(error);
+    next(error);
+  }
+});
+
+// ================= START SERVER =================
+app.listen(port, () => {
+  console.log(`SSR server running at ${appBaseUrl}`);
 });
