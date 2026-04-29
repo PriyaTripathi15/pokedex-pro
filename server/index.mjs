@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import express from 'express';
 import session from 'express-session';
-import FileStore from 'session-file-store';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GitHubStrategy } from 'passport-github2';
@@ -33,28 +32,15 @@ const githubConfigured = Boolean(process.env.GITHUB_CLIENT_ID && process.env.GIT
 
 app.use(express.json());
 
-// ✅ FIXED SESSION CONFIG with FileStore for production
-const StoreFactory = FileStore(session);
-const sessionStore = isProduction 
-  ? new StoreFactory({ path: './sessions' })
-  : undefined;
-
 app.use(
   session({
-    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'pokedex-pro-dev-session-secret',
     resave: false,
-
-    // 🔥 IMPORTANT FIX
     saveUninitialized: true,
-
     cookie: {
       httpOnly: true,
-
-      // ✅ FIXED for production + localhost
       sameSite: isProduction ? 'none' : 'lax',
-
-      secure: isProduction, // must be true in production (https)
+      secure: isProduction,
     },
   })
 );
