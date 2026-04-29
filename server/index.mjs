@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import express from 'express';
 import session from 'express-session';
+import RedisStore from 'connect-redis';
+import { createClient } from 'redis';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GitHubStrategy } from 'passport-github2';
@@ -32,8 +34,26 @@ const githubConfigured = Boolean(process.env.GITHUB_CLIENT_ID && process.env.GIT
 
 app.use(express.json());
 
+// ✅ REDIS SESSION STORE FOR PRODUCTION
+let redisClient;
+let store;
+
+if (isProduction) {
+  redisClient = createClient({
+    url: process.env.REDIS_URL || 'redis://localhost:6379',
+  });
+  
+  redisClient.connect().catch(err => {
+    console.warn('Redis connection failed:', err.message);
+    console.warn('Sessions will use memory store as fallback');
+  });
+
+  store = new RedisStore({ client: redisClient, prefix: 'pokedex:' });
+}
+
 app.use(
   session({
+    store,
     secret: process.env.SESSION_SECRET || 'pokedex-pro-dev-session-secret',
     resave: false,
     saveUninitialized: true,

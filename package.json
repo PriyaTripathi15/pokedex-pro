@@ -12,6 +12,7 @@
     "start": "NODE_ENV=production node server/index.mjs"
   },
   "dependencies": {
+    "connect-redis": "^9.0.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "express-session": "^1.18.2",
@@ -19,7 +20,8 @@
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "redis": "^5.12.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
