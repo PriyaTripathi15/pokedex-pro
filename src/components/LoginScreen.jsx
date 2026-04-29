@@ -28,7 +28,7 @@ export default function LoginScreen({
   <div className="mb-6 flex items-center gap-3 justify-center md:justify-start">
     <span className="h-3 w-3 rounded-full bg-red-400 shadow-[0_0_16px_rgba(248,113,113,0.75)]" />
     <h1 className="text-3xl font-bold text-yellow-200 font-mono">
-      Pokédex Pro
+      Pokedex Lite
     </h1>
   </div>
 

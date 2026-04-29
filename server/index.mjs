@@ -40,7 +40,7 @@ app.use(
   session({
     secret:
       process.env.SESSION_SECRET ||
-      'pokedex-pro-dev-session-secret',
+      'pokedex-lite-dev-session-secret',
     resave: false,
     saveUninitialized: false,
     proxy: true,
