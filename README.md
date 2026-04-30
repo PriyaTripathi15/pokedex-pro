@@ -2,7 +2,7 @@
 
 A fully-featured, responsive web application to search, filter, and explore Pokémon with a beautiful yellow and red theme inspired by the iconic Pokéball design. Built with React, Vite, and Tailwind CSS.
 
-**🌐 Live Demo**: [pokedex-pro.vercel.app](https://your-deployed-url-here.vercel.app) (Deployed on Vercel)
+**🌐 Live Demo**: [pokedex-pro.Render.app](https://pokemon-live.onrender.com) (Deployed on Render)
 
 > **Frontend Developer Assignment Submission** - Built following the assignment requirements with all mandatory features and bonus implementations.
 
@@ -237,7 +237,7 @@ vercel deploy
 
 Environment variables are set in Vercel dashboard.
 
-**Live URL**: [pokedex-pro.vercel.app](https://your-deployed-url-here.vercel.app)
+**Live URL**: [pokedex-pro.render.app](https://pokemon-live.onrender.com)
 
 ### Alternative Deployment Options
 - **Netlify**: Free tier with automatic deployments from GitHub
